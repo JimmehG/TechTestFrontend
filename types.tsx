@@ -1,4 +1,5 @@
 export type RootStackParamList = {
+  AddPhoto: undefined;
   Root: undefined;
   NotFound: undefined;
 };

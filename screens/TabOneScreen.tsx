@@ -1,15 +1,69 @@
-import * as React from 'react';
-import { StyleSheet } from 'react-native';
+import React, { useState, useEffect, createRef } from 'react';
+import { StyleSheet, TouchableOpacity } from 'react-native';
 
-import EditScreenInfo from '../components/EditScreenInfo';
 import { Text, View } from '../components/Themed';
 
+import { Camera, CameraCapturedPicture } from 'expo-camera';
+import { useNavigation } from '@react-navigation/native';
+
 export default function TabOneScreen() {
+  const [hasPermission, setHasPermission] = useState<boolean | null>(null);
+  const [type, setType] = useState(Camera.Constants.Type.back);
+  const cameraRef = createRef<Camera>();
+  const navigation = useNavigation();
+
+  useEffect(() => {
+    (async () => {
+      const { status } = await Camera.requestPermissionsAsync();
+      setHasPermission(status === 'granted');
+    })();
+  }, []);
+
+  const _takePhoto = async () => {
+    if (cameraRef.current) {
+      cameraRef.current.takePictureAsync({base64: true, onPictureSaved: _onPictureSaved});
+    }
+  }
+
+  const _onPictureSaved = (capturedPicture: CameraCapturedPicture) => {
+    console.log(capturedPicture.uri);
+    navigation.navigate('AddPhoto', {photo: capturedPicture});
+  }
+
+  if (hasPermission === null) {
+    return <View />;
+  }
+  if (hasPermission === false) {
+    return <Text>No access to camera</Text>;
+  }
+
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Tab One</Text>
-      <View style={styles.separator} lightColor="#eee" darkColor="rgba(255,255,255,0.1)" />
-      <EditScreenInfo path="/screens/TabOneScreen.tsx" />
+      <Camera style={styles.camera} type={type} ref={cameraRef}>
+        <View style={styles.buttonContainer}>
+          <TouchableOpacity
+            style={styles.button}
+            onPress={() => {
+              console.log("flipped")
+              setType(
+                type === Camera.Constants.Type.back
+                  ? Camera.Constants.Type.front
+                  : Camera.Constants.Type.back
+              );
+            }}>
+            <Text style={styles.text}>Flip</Text>
+          </TouchableOpacity>
+        </View>
+      </Camera>
+      <View style={styles.snapContainer}>
+          <TouchableOpacity
+            style={styles.button}
+            onPress={() => {
+              _takePhoto();
+              }}>
+            <Text style={styles.text}>Take Photo</Text>
+          </TouchableOpacity>
+        </View>
     </View>
   );
 }
@@ -17,16 +71,30 @@ export default function TabOneScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+  },
+  camera: {
+    flex: 1,
+  },
+  buttonContainer: {
+    flex: 1,
+    backgroundColor: 'transparent',
+    flexDirection: 'row',
+    margin: 20,
+  },
+  snapContainer: {
+    flex: 1,
+    backgroundColor: 'transparent',
+    flexDirection: 'row',
+    margin: 50,
     alignItems: 'center',
-    justifyContent: 'center',
   },
-  title: {
-    fontSize: 20,
-    fontWeight: 'bold',
+  button: {
+    flex: 0.1,
+    alignSelf: 'flex-end',
+    alignItems: 'center',
   },
-  separator: {
-    marginVertical: 30,
-    height: 1,
-    width: '80%',
+  text: {
+    fontSize: 18,
+    color: 'white',
   },
 });
